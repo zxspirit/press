@@ -26,7 +26,7 @@ class SecurityConfig(val jwtFilter: JwtFilter, val objectMapper: ObjectMapper) {
             .authorizeHttpRequests {
                 it
                     .requestMatchers("/", "/login", "/public/**", "/error").permitAll()
-                    .requestMatchers("/dns/**").hasRole("ADMIN")
+                    .requestMatchers("/dns/**").hasAnyRole("ADMIN", "USER")
                     .anyRequest().authenticated()
             }
             .csrf {

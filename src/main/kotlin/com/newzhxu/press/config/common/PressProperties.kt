@@ -14,23 +14,25 @@ import java.util.*
 @ConfigurationProperties(prefix = "press")
 data class PressProperties(
 
-    @NestedConfigurationProperty var keyPair: ES256KeyPair
+    @NestedConfigurationProperty var keyPairConfig: ES256KeyPair
 ) {
 
 }
 
 // ES256 key pair configuration
 data class ES256KeyPair(
-    var privateKey: String = "",
-    var publicKey: String = ""
+    val privateKey: String,
+    val publicKey: String,
 ) {
-    fun getKeyPair(): KeyPair {
+    val keyPair: KeyPair
 
+    init {
         val factory = KeyFactory.getInstance("EC")
         val private = PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKey))
         val pub = X509EncodedKeySpec(Base64.getDecoder().decode(publicKey))
         val publicKey1 = factory.generatePublic(pub)
         val privateKey1 = factory.generatePrivate(private)
-        return KeyPair(publicKey1, privateKey1)
+        keyPair = KeyPair(publicKey1, privateKey1)
     }
+
 }

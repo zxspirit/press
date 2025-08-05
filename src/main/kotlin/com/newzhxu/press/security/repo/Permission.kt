@@ -5,30 +5,25 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.security.core.GrantedAuthority
-import org.springframework.stereotype.Repository
 
 /**
+ * authority entity
  * @author zheng2580369@gmail.com
  */
 @Entity
-@Table(name = "roles")
-class Role : GrantedAuthority {
-    constructor()
+@Table(name = "permissions")
 
-
+class Permission : GrantedAuthority {
     @Id
     var name: String = ""
-
-
     var description: String? = null
 
-
-    override fun getAuthority(): String {
+    override fun getAuthority(): String? {
         return name
     }
 }
 
-@Repository
-interface RoleRepo : JpaRepository<Role, String> {
-    fun findRoleByName(name: String): Role?
+interface PermissionRepo : JpaRepository<Permission, String> {
+    fun findAuthorityByName(name: String): Permission?
+    fun deleteAuthorityByName(name: String)
 }

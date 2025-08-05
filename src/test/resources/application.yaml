@@ -1,0 +1,19 @@
+logging:
+  level:
+    root: debug
+press:
+  key-pair-config:
+    private-key: MEECAQAwEwYHKoZIzj0CAQYIKoZIzj0DAQcEJzAlAgEBBCDbVg9n8mNWBNHwGaLCRtXmDitY1NbhSgAXtAxAQ3rM0Q==
+    public-key: MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEgj3Gr3Ol36jRfg1nC9krG31c+jQI7Zf9rFbS9aZj/aWEw4RdOK9EaREW7DojF3ZALKhGBu7QoGenSNXoVK0OKA==
+spring:
+
+  application:
+    name: press
+  datasource:
+    url: jdbc:postgresql://localhost:5432/press
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update

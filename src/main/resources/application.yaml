@@ -1,4 +1,6 @@
 spring:
+  jmx:
+    enabled: true
   profiles:
     active: dev
   application:
@@ -12,6 +14,6 @@ spring:
     hibernate:
       ddl-auto: update
 press:
-  key-pair:
+  key-pair-config:
     private-key: MEECAQAwEwYHKoZIzj0CAQYIKoZIzj0DAQcEJzAlAgEBBCDbVg9n8mNWBNHwGaLCRtXmDitY1NbhSgAXtAxAQ3rM0Q==
     public-key: MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEgj3Gr3Ol36jRfg1nC9krG31c+jQI7Zf9rFbS9aZj/aWEw4RdOK9EaREW7DojF3ZALKhGBu7QoGenSNXoVK0OKA==
