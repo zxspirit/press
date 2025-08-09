@@ -1,6 +1,11 @@
 package com.newzhxu.press.openapi
 
+import io.swagger.v3.oas.models.Components
 import io.swagger.v3.oas.models.OpenAPI
+import io.swagger.v3.oas.models.info.Info
+import io.swagger.v3.oas.models.security.SecurityRequirement
+import io.swagger.v3.oas.models.security.SecurityScheme
+import io.swagger.v3.oas.models.servers.Server
 import org.springdoc.core.models.GroupedOpenApi
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -9,20 +14,35 @@ import org.springframework.context.annotation.Configuration
  * @author zheng2580369@gmail.com
  */
 @Configuration
-class OpenApiConfig {
+class PublicOpenApiConfig {
     @Bean
     fun openapi(): OpenAPI {
         return OpenAPI().apply {
-            info = io.swagger.v3.oas.models.info.Info().apply {
+            info = Info().apply {
                 title = "Press API"
                 version = "1.0.0"
                 description = "API documentation for Press application"
             }
             servers = listOf(
-                io.swagger.v3.oas.models.servers.Server().apply {
+                Server().apply {
                     url = "http://localhost:8080"
                     description = "Local server"
                 })
+            security = listOf(
+                SecurityRequirement().apply {
+                    addList("basicAuth")
+                }
+            )
+            components = Components().apply {
+                securitySchemes = mutableMapOf("basicAuth" to SecurityScheme().apply {
+                    type = SecurityScheme.Type.HTTP
+                    scheme = "basic"
+                    description = "Basic authentication for API access"
+
+                })
+            }
+
+
         }
     }
 

@@ -1,6 +1,6 @@
 package com.newzhxu.press
 
-import com.newzhxu.press.config.common.PressProperties
+import com.newzhxu.press.config.PressProperties
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication

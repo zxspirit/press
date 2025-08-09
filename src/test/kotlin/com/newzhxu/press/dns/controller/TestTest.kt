@@ -1,10 +1,10 @@
 package com.newzhxu.press.dns.controller
 
-import com.newzhxu.press.config.common.PressProperties
+import com.newzhxu.press.config.PressProperties
 import com.newzhxu.press.security.config.SecurityConfig
 import com.newzhxu.press.security.filter.JwtFilter
 import com.newzhxu.press.security.repo.*
-import com.newzhxu.press.security.service.JwtUserDetailService
+import com.newzhxu.press.security.service.MyUserDetailService
 import jakarta.servlet.FilterChain
 import jakarta.servlet.ServletRequest
 import jakarta.servlet.ServletResponse
@@ -26,7 +26,7 @@ import org.springframework.test.web.servlet.get
  * @author zheng2580369@gmail.com
  */
 @WebMvcTest(controllers = [TestController::class])
-@Import(value = [SecurityConfig::class, JwtUserDetailService::class])
+@Import(value = [SecurityConfig::class, MyUserDetailService::class])
 class TestTest {
     @Autowired
     lateinit var mvc: MockMvc
@@ -64,7 +64,7 @@ class TestTest {
             val authentication = UsernamePasswordAuthenticationToken(
                 "testUser",
                 null,
-                listOf(SimpleGrantedAuthority("ROLE_USER"))
+                listOf(SimpleGrantedAuthority("ROLE_USER"), SimpleGrantedAuthority("DNS_EDIT"))
             )
             SecurityContextHolder.getContext().authentication = authentication
             chain.doFilter(request, response)

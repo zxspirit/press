@@ -1,7 +1,7 @@
 package com.newzhxu.press.config.security
 
-import com.newzhxu.press.config.common.ES256KeyPair
-import com.newzhxu.press.config.common.PressProperties
+import com.newzhxu.press.config.ES256KeyPair
+import com.newzhxu.press.config.PressProperties
 import com.newzhxu.press.security.config.getToken
 import com.newzhxu.press.security.config.getUserId
 import org.junit.jupiter.api.DisplayName

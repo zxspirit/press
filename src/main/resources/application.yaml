@@ -1,6 +1,7 @@
 spring:
   jmx:
-    enabled: true
+    enabled: false
+
   profiles:
     active: dev
   application:

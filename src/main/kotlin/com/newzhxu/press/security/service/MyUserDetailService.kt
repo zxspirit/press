@@ -8,6 +8,7 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.context.SecurityContextHolderStrategy
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsPasswordService
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.provisioning.UserDetailsManager
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -16,18 +17,19 @@ import org.springframework.transaction.annotation.Transactional
  * @author zheng2580369@gmail.com
  */
 @Component
-class JwtUserDetailService(
+class MyUserDetailService(
     val userRepo: UserRepo,
     val roleRepo: RoleRepo,
     val userRoleRelationRepo: UserRoleRelationRepo,
     val permissionRepo: PermissionRepo,
     val rolePermissionRelationRepo: RolePermissionRelationRepo,
+    val passwordEncoder: PasswordEncoder,
 ) : UserDetailsManager, UserDetailsPasswordService {
-    val logger: Logger = LoggerFactory.getLogger(JwtUserDetailService::class.java)
+    val logger: Logger = LoggerFactory.getLogger(MyUserDetailService::class.java)
     private var securityContextHolderStrategy: SecurityContextHolderStrategy = SecurityContextHolder
         .getContextHolderStrategy()
 
-    @Transactional
+    @Transactional(rollbackFor = [Exception::class])
     override fun createUser(user: UserDetails?) {
         if (user == null) {
             logger.error("User cannot be null")
@@ -43,8 +45,10 @@ class JwtUserDetailService(
             logger.error("User already exists: ${details.name}")
             throw IllegalArgumentException("User already exists")
         }
-        userRepo.save(details)
+        details.pass = passwordEncoder.encode(user.pass)
 
+        userRepo.save(details)
+        userRoleRelationRepo.deleteUserRoleRelationsByUserName(details.name)
         details.authorities.forEach {
             val existsById = roleRepo.existsById(it.authority)
             if (!existsById) {
@@ -73,6 +77,7 @@ class JwtUserDetailService(
             logger.error("Password cannot be null or empty for user: ${user1.name}")
             throw IllegalArgumentException("Password cannot be null or empty")
         }
+        user1.pass = passwordEncoder.encode(user1.pass)
         userRepo.save(user1)
         // Clear existing roles
         userRoleRelationRepo.deleteUserRoleRelationsByUserName(user1.name)
@@ -109,6 +114,9 @@ class JwtUserDetailService(
         userRoleRelationRepo.deleteUserRoleRelationsByUserName(username)
     }
 
+    /**
+     * 两个密码都是明文密码
+     */
     @Transactional
     override fun changePassword(oldPassword: String?, newPassword: String?) {
         val authentication = securityContextHolderStrategy.context.authentication
@@ -117,11 +125,12 @@ class JwtUserDetailService(
             logger.error("User not found: ${authentication.name}")
             throw IllegalArgumentException("User not found")
         }
-        if (user.pass != oldPassword) {
+        val oldEncode = passwordEncoder.encode(oldPassword)
+        if (passwordEncoder.matches(user.pass, oldEncode)) {
             logger.error("Old password does not match for user: ${authentication.name}")
             throw IllegalArgumentException("Old password is incorrect")
         }
-        user.pass = newPassword
+        user.pass = passwordEncoder.encode(newPassword)
         userRepo.save(user)
         logger.info("Password changed successfully for user: ${authentication.name}")
         // Optionally, you can clear the authentication context to force re-authentication
@@ -139,6 +148,9 @@ class JwtUserDetailService(
         return userRepo.existsById(username)
     }
 
+    /**
+     * newPassword 加密后的密码
+     */
     @Transactional
     override fun updatePassword(
         user: UserDetails?,
@@ -154,14 +166,17 @@ class JwtUserDetailService(
             throw IllegalArgumentException("User does not exist")
         }
         if (entity.pass == newPassword) {
-            logger.warn("New password is the same as the old password for user: ${entity.username}")
-            throw IllegalArgumentException("New password cannot be the same as the old password")
-        }
-        entity.pass = newPassword
-        userRepo.save(entity)
-        logger.info("Password updated for user: ${entity.username}")
-        return entity
+            if (passwordEncoder.matches(newPassword, user.pass)) {
+                logger.warn("New password is the same as the old password for user: ${entity.username}")
+                throw IllegalArgumentException("New password cannot be the same as the old password")
+            }
+            entity.pass = newPassword
+            userRepo.save(entity)
+            logger.info("Password updated for user: ${entity.username}")
+            return entity
 
+        }
+        return userRepo.findById(entity.username).orElse(null)
     }
 
     @Transactional(readOnly = true)
@@ -191,3 +206,6 @@ class JwtUserDetailService(
         return user
     }
 }
+
+
+

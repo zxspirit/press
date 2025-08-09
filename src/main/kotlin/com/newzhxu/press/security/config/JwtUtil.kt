@@ -1,5 +1,6 @@
 package com.newzhxu.press.security.config
 
+import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
 import org.springframework.security.core.AuthenticationException
@@ -12,7 +13,7 @@ import java.util.*
  */
 
 
-class JwtException : AuthenticationException {
+class CustomJwtException : AuthenticationException {
     constructor(message: String, exception: Exception) : super(message, exception)
 
 }
@@ -28,8 +29,8 @@ fun getToken(userId: String, time: Long = 60 * 60 * 1000, privateKey: PrivateKey
                 SignatureAlgorithm.ES256
             )
             .compact()
-    } catch (e: Exception) {
-        throw JwtException("Failed to generate JWT token", e)
+    } catch (e: JwtException) {
+        throw CustomJwtException("Failed to generate JWT token", e)
     }
 }
 
@@ -41,8 +42,8 @@ fun getUserId(token: String, publicKey: PublicKey): String {
             .parseClaimsJws(token)
             .body
             .subject
-    } catch (ex: Exception) {
-        throw JwtException("Invalid JWT token", ex)
+    } catch (ex: JwtException) {
+        throw CustomJwtException("Invalid JWT token", ex)
     }
 }
 

@@ -5,11 +5,18 @@ package com.newzhxu.press.common
  */
 data class Result<T>(
     val success: Boolean,
-    val message: String?,
     val pageInfo: PageInfo?,
-    val data: T?
+    val data: T?,
+    val errors: MutableSet<ResponseInfo> = mutableSetOf(),
+    val messages: MutableSet<ResponseInfo> = mutableSetOf(),
 ) {
+
 }
+
+class ResponseInfo(
+    val code: Int? = null,
+    val message: String? = null,
+)
 
 data class PageInfo(
     val pageNumber: Int,
@@ -18,11 +25,11 @@ data class PageInfo(
     val totalPages: Int,
 ) {}
 
-fun success(data: Any? = null, message: String? = null, pageInfo: PageInfo? = null): Result<*> {
-    return Result(true, message, pageInfo, data)
+fun <T> success(data: T? = null, message: String? = null, pageInfo: PageInfo? = null): Result<T> {
+    return Result(true, pageInfo, data)
 
 }
 
-fun failure(message: String? = null, pageInfo: PageInfo? = null): Result<*> {
-    return Result(false, message, pageInfo, null)
+fun <T> failure(pageInfo: PageInfo? = null): Result<T> {
+    return Result(false, pageInfo, null)
 }

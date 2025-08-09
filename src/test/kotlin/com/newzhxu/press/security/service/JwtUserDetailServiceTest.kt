@@ -12,12 +12,12 @@ import org.springframework.boot.test.context.SpringBootTest
 @SpringBootTest
 class JwtUserDetailServiceTest {
     @Autowired
-    lateinit var jwtUserDetailService: JwtUserDetailService
+    lateinit var myUserDetailService: MyUserDetailService
 
     @Test
 //    @Transactional
     fun createUser() {
-        jwtUserDetailService.createUser(User().apply {
+        myUserDetailService.createUser(User().apply {
             name = "test"
             pass = "123"
 
@@ -34,7 +34,7 @@ class JwtUserDetailServiceTest {
 
     @Test
     fun loadUserByUsernameTest() {
-        val user = jwtUserDetailService.loadUserByUsername("test")
+        val user = myUserDetailService.loadUserByUsername("test")
         println(user)
     }
 
