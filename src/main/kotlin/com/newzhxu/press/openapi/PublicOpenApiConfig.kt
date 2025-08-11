@@ -31,6 +31,7 @@ class PublicOpenApiConfig {
             security = listOf(
                 SecurityRequirement().apply {
                     addList("basicAuth")
+                    addList("formLogin")
                 }
             )
             components = Components().apply {
@@ -39,6 +40,11 @@ class PublicOpenApiConfig {
                     scheme = "basic"
                     description = "Basic authentication for API access"
 
+                }, "formLogin" to SecurityScheme().apply {
+                    type = SecurityScheme.Type.APIKEY
+                    `in` = SecurityScheme.In.HEADER
+                    name = "Authorization"
+                    description = "Form login authentication for API access"
                 })
             }
 

@@ -70,4 +70,10 @@ class MyUserDetailServiceTest {
         val exists = myUserDetailService.userExists("test")
         println("User exists: $exists")
     }
+
+    @Test
+    fun loadUserByUsername() {
+        val user = myUserDetailService.loadUserByUsername("test")
+        println(user)
+    }
 }

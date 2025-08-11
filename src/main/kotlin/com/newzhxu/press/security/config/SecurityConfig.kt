@@ -1,8 +1,5 @@
 package com.newzhxu.press.security.config
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.newzhxu.press.common.failure
-import jakarta.servlet.http.HttpServletResponse
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authentication.AuthenticationManager
@@ -26,17 +23,15 @@ class SecurityConfig() {
     @Bean
     fun securityFilterChain(
         http: HttpSecurity,
-        objectMapper: ObjectMapper,
-        authenticationManager: AuthenticationManager
+        authenticationManager: AuthenticationManager,
     ): SecurityFilterChain {
         val filterChain = http
             .authorizeHttpRequests {
-                it
-                    .requestMatchers(
-                        "/", "/login", "/public/**", "/error",
-                        "/user/register",
-                        "/swagger-ui.html", "/swagger-ui.html/**", "/swagger-ui/**", "/v3/api-docs/**"
-                    ).permitAll()
+                it.requestMatchers(
+                    "/", "/login", "/public/**", "/error",
+                    "/user/register",
+                    "/swagger-ui.html", "/swagger-ui.html/**", "/swagger-ui/**", "/v3/api-docs/**"
+                ).permitAll()
                     .requestMatchers("/dns/**").hasAnyRole("ADMIN", "USER")
                     .requestMatchers("/user/**").hasAnyRole("ADMIN", "USER")
                     .anyRequest().authenticated()
@@ -45,35 +40,19 @@ class SecurityConfig() {
                 it.disable() // Disable CSRF for simplicity, consider enabling in production
             }
             .formLogin {
-                it.disable() // Disable form login
             }
             .httpBasic {
-                it.authenticationEntryPoint { _, response, _ ->
-                    response.status = HttpServletResponse.SC_UNAUTHORIZED
-                    response.writer.write(objectMapper.writeValueAsString(failure<Void>()))
-                }
-
             }
             .logout {
                 it.disable()
             }
             .authenticationManager(authenticationManager)
             .exceptionHandling {
-                it.accessDeniedHandler { _, response, _ ->
-                    response.status = HttpServletResponse.SC_FORBIDDEN
-                    response.writer.write(objectMapper.writeValueAsString(failure<Void>()))
-                }
-
-                it.authenticationEntryPoint { _, response, _ ->
-                    response.status = HttpServletResponse.SC_UNAUTHORIZED
-                    response.writer.write(objectMapper.writeValueAsString(failure<Void>()))
-                }
-
-
             }
             .build()
         return filterChain
     }
+
 
     @Bean
     fun delegatingPasswordEncoder(): PasswordEncoder {
@@ -84,8 +63,12 @@ class SecurityConfig() {
     @Bean
     fun daoAuthenticationProvider(
         userDetailsService: UserDetailsService,
+        defaultPasswordEncoder: PasswordEncoder
     ): DaoAuthenticationProvider {
         return DaoAuthenticationProvider(userDetailsService)
+            .apply {
+                this.setPasswordEncoder(defaultPasswordEncoder)
+            }
     }
 
     @Bean
@@ -96,8 +79,5 @@ class SecurityConfig() {
     }
 }
 
-fun main() {
-    val encode = PasswordEncoderFactories.createDelegatingPasswordEncoder().encode("112")
-    println(encode)
-}
+
 

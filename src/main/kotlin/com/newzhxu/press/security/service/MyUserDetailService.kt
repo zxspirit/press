@@ -8,6 +8,7 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.context.SecurityContextHolderStrategy
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsPasswordService
+import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.provisioning.UserDetailsManager
 import org.springframework.stereotype.Component
@@ -29,20 +30,14 @@ class MyUserDetailService(
     private var securityContextHolderStrategy: SecurityContextHolderStrategy = SecurityContextHolder
         .getContextHolderStrategy()
 
-    @Transactional(rollbackFor = [Exception::class])
+    @Transactional
     override fun createUser(user: UserDetails?) {
         if (user == null) {
             logger.error("User cannot be null")
             throw IllegalArgumentException("User cannot be null")
         }
         val details = user as User
-        if (details.name.isEmpty()) {
-            logger.error("Username cannot be null or empty")
-            throw IllegalArgumentException("Username cannot be null or empty")
-        }
-        val findUserByName = userRepo.findUserByName(user.name)
-        if (findUserByName != null) {
-            logger.error("User already exists: ${details.name}")
+        findUserInternal(details.username)?.run {
             throw IllegalArgumentException("User already exists")
         }
         details.pass = passwordEncoder.encode(user.pass)
@@ -50,10 +45,8 @@ class MyUserDetailService(
         userRepo.save(details)
         userRoleRelationRepo.deleteUserRoleRelationsByUserName(details.name)
         details.authorities.forEach {
-            val existsById = roleRepo.existsById(it.authority)
-            if (!existsById) {
-                logger.error("Authority does not exist: ${it.authority}")
-                throw IllegalArgumentException("Authority does not exist: ${it.authority}")
+            findRoleInternal(it.authority) ?: run {
+                throw IllegalArgumentException("Role does not exist: ${it.authority}")
             }
             userRoleRelationRepo.save(
                 UserRoleRelation()
@@ -68,11 +61,10 @@ class MyUserDetailService(
     @Transactional
     override fun updateUser(user: UserDetails?) {
         val user1 = user as User
-        val exist = userRepo.existsById(user1.name)
-        if (!exist) {
-            logger.error("User does not exist: ${user1.name}")
+        findUserInternal(user1.username) ?: run {
             throw IllegalArgumentException("User does not exist")
         }
+
         if (user1.pass.isNullOrBlank()) {
             logger.error("Password cannot be null or empty for user: ${user1.name}")
             throw IllegalArgumentException("Password cannot be null or empty")
@@ -100,31 +92,25 @@ class MyUserDetailService(
 
     @Transactional
     override fun deleteUser(username: String?) {
-        if (username.isNullOrEmpty()) {
-            logger.error("Username cannot be null or empty")
-            throw IllegalArgumentException("Username cannot be null or empty")
-        }
-        val exist = userRepo.existsById(username)
-        if (!exist) {
-            logger.error("User does not exist: $username")
-            throw IllegalArgumentException("User does not exist")
+        findUserInternal(username) ?: run {
+            throw IllegalArgumentException("Cannot delete user, user is not found")
         }
 
-        userRepo.deleteById(username)
+        userRepo.deleteById(username!!)
         userRoleRelationRepo.deleteUserRoleRelationsByUserName(username)
     }
 
     /**
      * 两个密码都是明文密码
+     * 只能在用户登录状态下修改密码
      */
     @Transactional
     override fun changePassword(oldPassword: String?, newPassword: String?) {
         val authentication = securityContextHolderStrategy.context.authentication
-        val user = userRepo.findById(authentication.name).orElse(null)
-        if (user == null) {
-            logger.error("User not found: ${authentication.name}")
-            throw IllegalArgumentException("User not found")
+        val user = findUserInternal(authentication.name) ?: run {
+            throw IllegalArgumentException("User does not exist")
         }
+
         val oldEncode = passwordEncoder.encode(oldPassword)
         if (passwordEncoder.matches(user.pass, oldEncode)) {
             logger.error("Old password does not match for user: ${authentication.name}")
@@ -141,12 +127,10 @@ class MyUserDetailService(
 
     @Transactional(readOnly = true)
     override fun userExists(username: String?): Boolean {
-        if (username.isNullOrEmpty()) {
-            logger.error("Username cannot be null or empty")
-            throw IllegalArgumentException("Username cannot be null or empty")
-        }
-        return userRepo.existsById(username)
+        val user = findUserInternal(username)
+        return user != null
     }
+
 
     /**
      * newPassword 加密后的密码
@@ -157,13 +141,11 @@ class MyUserDetailService(
         newPassword: String?
     ): UserDetails? {
         val entity = user as User
+        findUserInternal(entity.name) ?: run {
+            throw IllegalArgumentException("User does not exist")
+        }
         if (newPassword.isNullOrBlank()) {
             throw IllegalArgumentException("New password cannot be null")
-        }
-        val exist = userRepo.existsById(entity.username)
-        if (!exist) {
-            logger.error("User does not exist: ${entity.username}")
-            throw IllegalArgumentException("User does not exist")
         }
         if (entity.pass == newPassword) {
             if (passwordEncoder.matches(newPassword, user.pass)) {
@@ -181,29 +163,44 @@ class MyUserDetailService(
 
     @Transactional(readOnly = true)
     override fun loadUserByUsername(username: String?): UserDetails? {
-        if (username == null) {
-            logger.error("Username cannot be null")
-            throw IllegalArgumentException("Username cannot be null")
-        }
-        val user = userRepo.findUserByName(username) ?: throw IllegalArgumentException("User not found")
+        val user = findUserInternal(username) ?: throw UsernameNotFoundException("User not found: $username")
         userRoleRelationRepo.findUserRoleRelationsByUserName(user.name)
-            .map {
-                val role = roleRepo.findById(it.roleName).orElseThrow()
-                val roles = user.authorities as MutableList<GrantedAuthority>
-                roles.add(role)
+            .map { userRoleRelation ->
+                val role = roleRepo.findById(userRoleRelation.roleName)
+                    .orElseThrow { IllegalArgumentException("找不到角色名，请检查数据库角色 $userRoleRelation.roleName") }
+                val grantedAuthorities = user.authorities as MutableSet<GrantedAuthority>
+                grantedAuthorities.add(role)
                 role
             }
-            .flatMap {
-                val rolePermissionRelations =
-                    rolePermissionRelationRepo.findRolePermissionRelationsByRoleName(it.name)
-                rolePermissionRelations
-            }
-            .forEach {
-                val permission = permissionRepo.findById(it.permissionName).orElseThrow()
-                val roles = user.authorities as MutableList<GrantedAuthority>
-                roles.add(permission)
+            .forEach { role ->
+                rolePermissionRelationRepo.findRolePermissionRelationsByRoleName(role.name)
+                    .forEach { rolePermissionRelation ->
+                        val permission = permissionRepo.findById(rolePermissionRelation.permissionName)
+                            .orElseThrow { IllegalArgumentException("根据权限名查不到权限信息，检查数据完整性 ${rolePermissionRelation.permissionName}") }
+                        val grantedAuthorities = user.authorities as MutableSet<GrantedAuthority>
+                        grantedAuthorities.add(permission)
+                    }
+
             }
         return user
+
+
+    }
+
+    private fun findUserInternal(username: String?): User? {
+        if (username.isNullOrEmpty()) {
+            logger.error("Username cannot be null or empty")
+            throw IllegalArgumentException("Username cannot be null or empty")
+        }
+        return userRepo.findUserByName(username)
+    }
+
+    private fun findRoleInternal(roleName: String?): Role? {
+        if (roleName.isNullOrEmpty()) {
+            logger.error("Role name cannot be null or empty")
+            throw IllegalArgumentException("Role name cannot be null or empty")
+        }
+        return roleRepo.findRoleByName(roleName)
     }
 }
 

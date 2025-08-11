@@ -1,8 +1,8 @@
 package com.newzhxu.press.security.controller
 
-import com.newzhxu.press.common.ResponseInfo
-import com.newzhxu.press.common.Result
-import com.newzhxu.press.common.success
+import com.newzhxu.press.entity.ResponseInfo
+import com.newzhxu.press.entity.Result
+import com.newzhxu.press.entity.success
 import com.newzhxu.press.security.repo.Role
 import com.newzhxu.press.security.repo.User
 import com.newzhxu.press.security.service.MyUserDetailService
@@ -10,10 +10,8 @@ import jakarta.validation.Valid
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.bind.annotation.*
 
 /**
  * @author zheng2580369@gmail.com
@@ -21,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/user")
 class UserController(val userDetailService: MyUserDetailService) {
-    @PostMapping("/register")
+    @PostMapping
     fun register(@Valid @RequestBody userDto: UserDto): Result<Void> {
 
 
@@ -36,6 +34,13 @@ class UserController(val userDetailService: MyUserDetailService) {
                 }
         )
         return success<Void>().apply { this.errors.add(ResponseInfo(200, "注册成功")) }
+    }
+
+    @DeleteMapping("/{name}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    fun deleteUser(@PathVariable name: String): Result<Void> {
+        userDetailService.deleteUser(name)
+        return success<Void>().apply { this.errors.add(ResponseInfo(200, "删除成功")) }
     }
 
 }

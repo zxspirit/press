@@ -1,4 +1,4 @@
-package com.newzhxu.press.common
+package com.newzhxu.press.entity
 
 /**
  * Custom exception class for the Press application.

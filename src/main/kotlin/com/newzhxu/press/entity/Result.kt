@@ -1,4 +1,4 @@
-package com.newzhxu.press.common
+package com.newzhxu.press.entity
 
 /**
  * @author zheng2580369@gmail.com

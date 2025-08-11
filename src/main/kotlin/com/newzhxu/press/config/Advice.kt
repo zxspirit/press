@@ -1,8 +1,8 @@
 package com.newzhxu.press.config
 
-import com.newzhxu.press.common.ResponseInfo
-import com.newzhxu.press.common.Result
-import com.newzhxu.press.common.failure
+import com.newzhxu.press.entity.ResponseInfo
+import com.newzhxu.press.entity.Result
+import com.newzhxu.press.entity.failure
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus

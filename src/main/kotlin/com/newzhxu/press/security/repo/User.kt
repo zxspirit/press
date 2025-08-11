@@ -18,11 +18,11 @@ class User : UserDetails {
     @Id
     var name: String = ""
     var pass: String? = null
-    var enabled: Boolean? = null
+    var enabled: Boolean = false
     var email: String? = null
 
     @Transient
-    var pressGrantedAuthorities: MutableList<Role> = mutableListOf()
+    var pressGrantedAuthorities: MutableSet<Role> = mutableSetOf()
 
 
     override fun getAuthorities(): Collection<GrantedAuthority> {
@@ -37,7 +37,21 @@ class User : UserDetails {
         return name
     }
 
+    override fun isAccountNonExpired(): Boolean {
+        return super.isAccountNonExpired()
+    }
 
+    override fun isAccountNonLocked(): Boolean {
+        return super.isAccountNonLocked()
+    }
+
+    override fun isCredentialsNonExpired(): Boolean {
+        return super.isCredentialsNonExpired()
+    }
+
+    override fun isEnabled(): Boolean {
+        return enabled
+    }
 }
 
 @Repository

@@ -1,8 +1,8 @@
 package com.newzhxu.press.security.filter
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.newzhxu.press.common.failure
 import com.newzhxu.press.config.PressProperties
+import com.newzhxu.press.entity.failure
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
